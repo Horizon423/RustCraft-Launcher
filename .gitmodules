@@ -1,0 +1,6 @@
+# RustCraft Launcher currently has no Git submodules.
+# Future external dependencies can be registered here, for example:
+#
+# [submodule "rust/vendor/example"]
+#     path = rust/vendor/example
+#     url = https://github.com/<owner>/<repo>.git

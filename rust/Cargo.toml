@@ -1,0 +1,25 @@
+[package]
+name = "rustcraft_launcher"
+version = "0.1.0"
+edition = "2021"
+authors = ["Horizon423"]
+description = "Native Rust engine for the RustCraft Launcher Android app"
+license = "MIT"
+publish = false
+
+[lib]
+# `cdylib` produces librustcraft_launcher.so for Android (loaded from Java with
+# System.loadLibrary("rustcraft_launcher")). `rlib` lets `cargo test` run on the host.
+name = "rustcraft_launcher"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+jni = "0.21.1"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+# The JNI bridge relies on catch_unwind, so panics must unwind (the default).
+panic = "unwind"

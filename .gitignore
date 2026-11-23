@@ -1,0 +1,16 @@
+# Gradle / Android
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
+.DS_Store
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Rust
+rust/target/
+
+# Generated native libraries (rebuilt by the Gradle task `buildRustLibs`)
+app/src/main/jniLibs/*/*.so

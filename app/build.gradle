@@ -1,0 +1,100 @@
+plugins {
+    id 'com.android.application'
+}
+
+// ---- Rust / cargo-ndk configuration ---------------------------------------
+// Android ABI name -> Rust target triple (install with `rustup target add ...`).
+def rustTargets = [
+        'arm64-v8a'  : 'aarch64-linux-android',
+        'armeabi-v7a': 'armv7-linux-androideabi',
+]
+def rustDir     = rootProject.file('rust')
+def jniLibsDir  = file('src/main/jniLibs')
+def rustProfile = (project.findProperty('rustProfile') ?: 'release').toString()  // -PrustProfile=debug
+def rustLibName = 'librustcraft_launcher.so'
+def minSdkApi   = 24
+
+android {
+    namespace 'com.voidkernel.rustcraftlauncher'
+    compileSdk 34
+    ndkVersion '26.1.10909125'
+
+    defaultConfig {
+        applicationId 'com.voidkernel.rustcraftlauncher'
+        minSdk minSdkApi
+        targetSdk 34
+        versionCode 1
+        versionName '0.1.0'
+
+        ndk {
+            abiFilters(*rustTargets.keySet().toList())
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    sourceSets {
+        main {
+            // cargo-ndk writes lib/<abi>/librustcraft_launcher.so here; AGP packages it.
+            jniLibs.srcDirs = [jniLibsDir]
+        }
+    }
+}
+
+// Compiles rust/ for every ABI via `cargo ndk` and drops the .so files into jniLibs.
+tasks.register('buildRustLibs', Exec) {
+    group = 'rust'
+    description = 'Builds the Rust engine with cargo-ndk for arm64-v8a and armeabi-v7a.'
+
+    workingDir rustDir
+    inputs.files(fileTree(rustDir) {
+        include 'Cargo.toml', 'Cargo.lock', 'src/**'
+    })
+    inputs.property('rustProfile', rustProfile)
+    outputs.files(rustTargets.keySet().collect { abi -> new File(jniLibsDir, "${abi}/${rustLibName}") })
+
+    doFirst {
+        // cargo-ndk locates the toolchain through ANDROID_NDK_HOME.
+        def ndkDir = android.ndkDirectory
+        if (ndkDir == null || !ndkDir.exists()) {
+            throw new GradleException(
+                    "Android NDK ${android.ndkVersion} not found. Install it with the SDK Manager " +
+                    "(SDK Tools > NDK (Side by side)) or `sdkmanager \"ndk;${android.ndkVersion}\"`.")
+        }
+        environment 'ANDROID_NDK_HOME', ndkDir.absolutePath
+
+        def cmd = ['cargo', 'ndk']
+        rustTargets.keySet().each { abi -> cmd.addAll(['-t', abi]) }
+        cmd.addAll(['--platform', minSdkApi.toString(),
+                    '-o', jniLibsDir.absolutePath,
+                    'build'])
+        if (rustProfile == 'release') {
+            cmd.add('--release')
+        }
+        commandLine cmd
+    }
+}
+
+tasks.register('cleanRustLibs', Delete) {
+    group = 'rust'
+    description = 'Removes generated native libraries from jniLibs.'
+    delete rustTargets.keySet().collect { abi -> new File(jniLibsDir, abi) }
+}
+
+// Make every Android build compile the Rust engine first; `clean` also clears the .so files.
+tasks.configureEach { task ->
+    if (task.name == 'preBuild') {
+        task.dependsOn('buildRustLibs')
+    } else if (task.name == 'clean') {
+        task.dependsOn('cleanRustLibs')
+    }
+}

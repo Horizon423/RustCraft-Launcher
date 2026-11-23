@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">RustCraft Launcher</string>
+    <string name="engine_loading">Starting RustCraft engine…</string>
+    <string name="engine_load_failed">Native engine failed to load</string>
+</resources>
