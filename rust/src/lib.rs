@@ -411,6 +411,7 @@ pub mod engine {
     use std::sync::{Mutex, MutexGuard};
 
     const PROFILES_FILE: &str = "profiles.txt";
+    const USERNAME_FILE: &str = "username.txt";
     const DEFAULT_PROFILE_NAME: &str = "Default";
     const DEFAULT_VERSION_ID: &str = "1.20.4";
     const DEFAULT_USERNAME: &str = "Player";
@@ -435,6 +436,7 @@ pub mod engine {
         state: EngineState,
         root: PathBuf,
         profiles: ProfileStore,
+        username: String,
     }
 
     impl Engine {
@@ -455,7 +457,14 @@ pub mod engine {
                 state: EngineState::Ready,
                 root,
                 profiles: ProfileStore::new(),
+                username: DEFAULT_USERNAME.to_owned(),
             };
+            let username_path = engine.root.join(USERNAME_FILE);
+            if username_path.exists() {
+                engine.username = validate_username(&fs::read_to_string(username_path)?)?;
+            } else {
+                engine.save_username(DEFAULT_USERNAME)?;
+            }
             if profiles_path.exists() {
                 engine.profiles = ProfileStore::from_text(&fs::read_to_string(&profiles_path)?)?;
             }
@@ -476,6 +485,18 @@ pub mod engine {
             &self.profiles
         }
 
+        pub fn username(&self) -> &str {
+            &self.username
+        }
+
+        /// Validates and persists the offline username used in generated launch arguments.
+        pub fn set_username(&mut self, username: &str) -> Result<()> {
+            self.ensure_ready()?;
+            self.save_username(username)?;
+            self.username = validate_username(username)?;
+            Ok(())
+        }
+
         pub fn game_dir(&self) -> PathBuf {
             self.root.join("game")
         }
@@ -494,6 +515,15 @@ pub mod engine {
             let path = self.root.join(PROFILES_FILE);
             let tmp = self.root.join(format!("{PROFILES_FILE}.tmp"));
             fs::write(&tmp, self.profiles.to_text())?;
+            fs::rename(&tmp, &path)?;
+            Ok(())
+        }
+
+        fn save_username(&self, username: &str) -> Result<()> {
+            let username = validate_username(username)?;
+            let path = self.root.join(USERNAME_FILE);
+            let tmp = self.root.join(format!("{USERNAME_FILE}.tmp"));
+            fs::write(&tmp, username)?;
             fs::rename(&tmp, &path)?;
             Ok(())
         }
@@ -521,11 +551,16 @@ pub mod engine {
         pub fn launch_command(&self, profile_id: &str) -> Result<String> {
             self.ensure_ready()?;
             let profile = self.profiles.get(profile_id)?;
+            if version::classify(&profile.version_id)? == version::VersionKind::Custom {
+                return Err(LauncherError::InvalidArgument(
+                    "only vanilla releases and snapshots can be launched".into(),
+                ));
+            }
             let game_dir = self.game_dir();
             let spec = LaunchSpec {
                 java_bin: "java",
                 game_dir: &game_dir,
-                username: DEFAULT_USERNAME,
+                username: &self.username,
             };
             Ok(launch::to_command_line(&launch::build_command(
                 profile, &spec,
@@ -544,6 +579,7 @@ pub mod engine {
             ));
             out.push_str(&format!("Data dir: {}\n", self.root.display()));
             out.push_str(&format!("Profiles: {}\n", self.profiles.len()));
+            out.push_str(&format!("Username: {}\n", self.username));
             for p in self.profiles.list() {
                 let kind = version::classify(&p.version_id)
                     .map(|k| k.as_str())
@@ -565,6 +601,20 @@ pub mod engine {
             self.state = EngineState::Stopped;
             Ok(())
         }
+    }
+
+    fn validate_username(username: &str) -> Result<String> {
+        let username = username.trim();
+        if !(3..=16).contains(&username.len())
+            || !username
+                .bytes()
+                .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
+        {
+            return Err(LauncherError::InvalidArgument(
+                "username must be 3..=16 ASCII letters, digits, or underscores".into(),
+            ));
+        }
+        Ok(username.to_owned())
     }
 
     // ---- process-wide instance used by the JNI layer --------------------------
@@ -724,6 +774,35 @@ pub mod jni_bridge {
     ) -> jstring {
         let out = guarded(&mut env, |_| Ok(ENGINE_VERSION.to_owned()));
         string_result(&mut env, out)
+    }
+
+    /// `String nativeGetUsername()` — the persisted offline username.
+    #[no_mangle]
+    pub extern "system" fn Java_com_voidkernel_rustcraftlauncher_MainActivity_nativeGetUsername<
+        'local,
+    >(
+        mut env: JNIEnv<'local>,
+        _this: JObject<'local>,
+    ) -> jstring {
+        let out = guarded(&mut env, |_| {
+            engine::with_engine(|engine| Ok(engine.username().to_owned()))
+        });
+        string_result(&mut env, out)
+    }
+
+    /// `void nativeSetUsername(String username)` — validates and persists the username.
+    #[no_mangle]
+    pub extern "system" fn Java_com_voidkernel_rustcraftlauncher_MainActivity_nativeSetUsername<
+        'local,
+    >(
+        mut env: JNIEnv<'local>,
+        _this: JObject<'local>,
+        username: JString<'local>,
+    ) {
+        let _ = guarded(&mut env, |env| {
+            let username = read_string(env, &username)?;
+            engine::with_engine(|engine| engine.set_username(&username))
+        });
     }
 
     /// `String nativeCreateProfile(String name, String versionId, int memoryMb)` —
@@ -898,17 +977,30 @@ mod tests {
         let mut engine = Engine::init(dir_str).unwrap();
         assert_eq!(engine.state(), EngineState::Ready);
         assert_eq!(engine.profiles().len(), 1);
-        let id = engine.create_profile("Modded", "1.20.4", 4096).unwrap();
-        assert_eq!(id, "modded");
+        assert_eq!(engine.username(), "Player");
+        engine.set_username("Alex_2").unwrap();
         assert!(engine
-            .launch_command("modded")
+            .launch_command("default")
+            .unwrap()
+            .ends_with("--username Alex_2"));
+        let id = engine.create_profile("Survival", "1.20.4", 4096).unwrap();
+        assert_eq!(id, "survival");
+        assert!(engine
+            .launch_command("survival")
             .unwrap()
             .contains("-Xmx4096M"));
+        let custom = engine
+            .create_profile("Custom", "fabric-loader-0.15.7", 2048)
+            .unwrap();
+        assert!(matches!(
+            engine.launch_command(&custom),
+            Err(LauncherError::InvalidArgument(_))
+        ));
         assert!(matches!(
             engine.launch_command("nope"),
             Err(LauncherError::NotFound(_))
         ));
-        assert!(engine.status_report().contains("Profiles: 2"));
+        assert!(engine.status_report().contains("Profiles: 3"));
 
         engine.shutdown().unwrap();
         engine.shutdown().unwrap(); // idempotent
@@ -920,10 +1012,41 @@ mod tests {
 
         // A fresh engine reloads what was saved.
         let reloaded = Engine::init(dir_str).unwrap();
-        assert_eq!(reloaded.profiles().len(), 2);
-        assert!(reloaded.profiles().get("modded").is_ok());
+        assert_eq!(reloaded.profiles().len(), 3);
+        assert_eq!(reloaded.username(), "Alex_2");
+        assert!(reloaded.profiles().get("survival").is_ok());
+        assert!(matches!(
+            reloaded.launch_command("custom"),
+            Err(LauncherError::InvalidArgument(_))
+        ));
 
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn rejects_invalid_usernames_without_replacing_saved_value() {
+        let dir = temp_dir("username");
+        let mut engine = Engine::init(dir.to_str().unwrap()).unwrap();
+
+        for invalid in [
+            "",
+            "Al",
+            "this_username_is_too_long",
+            "Alex Smith",
+            "Alex-2",
+            "é",
+        ] {
+            assert!(engine.set_username(invalid).is_err(), "accepted {invalid:?}");
+        }
+        assert_eq!(engine.username(), "Player");
+        assert_eq!(
+            Engine::init(dir.to_str().unwrap()).unwrap().username(),
+            "Player"
+        );
+        engine.set_username("abc").unwrap();
+        assert_eq!(engine.username(), "abc");
+        engine.set_username("A123456789012345").unwrap();
+        assert_eq!(engine.username(), "A123456789012345");
     }
 
     #[test]

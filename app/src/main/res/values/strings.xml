@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">RustCraft Launcher</string>
+    <string name="app_name">RustCraft Launcher Edition</string>
     <string name="engine_loading">Starting RustCraft engine…</string>
     <string name="engine_load_failed">Native engine failed to load</string>
+    <string name="edit_username">Edit Username</string>
+    <string name="username_prompt">Offline Minecraft username</string>
+    <string name="username_save_failed">Could not save username</string>
 </resources>

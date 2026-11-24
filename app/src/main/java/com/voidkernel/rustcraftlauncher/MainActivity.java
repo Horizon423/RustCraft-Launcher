@@ -1,10 +1,15 @@
 package com.voidkernel.rustcraftlauncher;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.text.InputType;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
@@ -37,6 +42,10 @@ public class MainActivity extends Activity {
 
     private native String nativeGetVersion();
 
+    private native String nativeGetUsername();
+
+    private native void nativeSetUsername(String username);
+
     private native String nativeCreateProfile(String name, String versionId, int memoryMb);
 
     private native String nativeGetLaunchCommand(String profileId);
@@ -44,6 +53,7 @@ public class MainActivity extends Activity {
     private native void nativeShutdown();
 
     private TextView statusView;
+    private Button editUsernameButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,6 +81,7 @@ public class MainActivity extends Activity {
         }
         try {
             statusView.setText(nativeInit(getFilesDir().getAbsolutePath()));
+            editUsernameButton.setEnabled(true);
         } catch (RuntimeException | UnsatisfiedLinkError e) {
             showError(getString(R.string.engine_load_failed), String.valueOf(e.getMessage()));
         }
@@ -95,6 +106,40 @@ public class MainActivity extends Activity {
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
         scroll.addView(statusView);
-        setContentView(scroll);
+
+        editUsernameButton = new Button(this);
+        editUsernameButton.setText(R.string.edit_username);
+        editUsernameButton.setEnabled(false);
+        editUsernameButton.setOnClickListener(view -> showUsernameDialog());
+
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.addView(scroll, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
+        layout.addView(editUsernameButton);
+        setContentView(layout);
+    }
+
+    private void showUsernameDialog() {
+        EditText input = new EditText(this);
+        input.setSingleLine(true);
+        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        input.setHint(R.string.username_prompt);
+        input.setText(nativeGetUsername());
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.edit_username)
+                .setView(input)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                    try {
+                        nativeSetUsername(input.getText().toString());
+                        statusView.setText(nativeGetStatus());
+                    } catch (RuntimeException | UnsatisfiedLinkError e) {
+                        showError(getString(R.string.username_save_failed),
+                                String.valueOf(e.getMessage()));
+                    }
+                })
+                .show();
     }
 }

@@ -23,8 +23,8 @@ android {
         applicationId 'com.voidkernel.rustcraftlauncher'
         minSdk minSdkApi
         targetSdk 34
-        versionCode 1
-        versionName '0.1.0'
+        versionCode 250
+        versionName '2.5'
 
         ndk {
             abiFilters(*rustTargets.keySet().toList())

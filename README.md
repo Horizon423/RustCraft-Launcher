@@ -1,8 +1,8 @@
 🦀
 
-# RustCraft Launcher
+# RustCraft Launcher Edition v2.5
 
-# Native Rust-Powered Minecraft rust Launcher for Android
+# Rust-Powered Android Launcher Shell
 
 <p align="center">
   Performance | Stability | Innovation | Open Source
@@ -13,13 +13,17 @@
   <img src="https://img.shields.io/badge/License-Apache%202.0-purple?style=for-the-badge">
 </p>---
 
-🌟 About The Project
+## About
 
-# RustCraft Launcher is an independent Android launcher project designed to bring Minecraft rust Edition to Android devices through Rust-powered native technology.
+RustCraft Launcher is an independent Android application with a Java Android shell
+and a Rust native engine. Version 2.5 initializes the engine, stores launcher
+profiles and an offline username, and can construct a vanilla Minecraft JVM
+command line.
 
-**The project focuses on performance, stability, efficient resource management, and a modern mobile gaming experience**
-
-# RustCraft aims to provide a dedicated launcher environment with custom branding, native integration, and support for compatible Minecraft rust components.
+This repository does not currently contain a Minecraft client, Android Minecraft
+main menu, mod installation/import/launch functionality, Minecraft authentication,
+or a 3D skin renderer. The username setting is an offline launch argument; it is
+not an authenticated Minecraft account profile.
 
 👨‍💻 Development Team
 
@@ -36,26 +40,50 @@ Responsible for the project's overall development direction, customization, inte
 Horizon Android — **[GoyDev](https://github.com/GoyDevv/Horizon-Android)**
 
 
-✨ Key Features
+## Implemented
 
-- 🦀 Rust-Powered Technology — Native Rust-oriented architecture.
-- 📱 Android Support — Designed for Android devices.
-- ⚡ Performance Focus — Optimized resource utilization.
-- 🎮 Minecraft rust Edition — Designed for rust Edition gameplay.
-- 🎨 Custom User Interface — Dedicated RustCraft branding and interface.
-- 🌍 World Management — Minecraft world data management.
-- 🧩 Mod Compatibility — Support for compatible mods and configurations.
-- 📂 Game File Management — Organized game directories and files.
-- 🔄 Data Preservation — Focus on preserving existing user data.
+- Android application shell backed by the Rust JNI engine.
+- Persistent local launcher profiles and a Minecraft-format offline username
+  (3-16 ASCII letters, digits, or underscores).
+- Generated vanilla release/snapshot JVM command lines using that username.
+- Native Android builds for ARM64 and ARMv7.
+
+## Partially Implemented
+
+- Profiles and launch commands are stored/constructed, but the app does not
+  download Minecraft files, authenticate accounts, or start a Minecraft process.
+- The username is local/offline only; it is not synchronized with an authenticated
+  Minecraft account or an in-game profile.
+
+## Unsupported
+
+- Minecraft client and in-game main menu, including branding and options screens.
+- Minecraft skin retrieval, rendering, and 3D player preview.
+- World and resource-pack management.
+- Mod installation, import, and launching. Custom version profiles can remain
+  stored for compatibility but the engine refuses to generate their launch commands.
+
+## v2.5 Release Notes
+
+- Public APK download: [RustCraft Launcher Edition v2.5](https://github.com/Horizon423/RustCraft-Launcher/releases/download/v2.5/RustCraft-Launcher-v2.5.apk).
+- Updated Android and native engine version metadata to 2.5.
+- Added a saved, validated offline username setting (3-16 ASCII letters, digits,
+  or underscores) used by generated vanilla launch commands.
+- Restricted generated launch commands to vanilla releases and snapshots; custom
+  version profiles remain stored but cannot be launched.
+- No Mods menu or mod installation/import pipeline exists in this repository.
+- A Minecraft game client, in-game menu, authentication, and 3D skin preview are
+  not included in the current architecture.
 
 📱 Project Information
 
 Information| Details
 Project Name| RustCraft Launcher
+Version| 2.5
 Main Developer| Horizon423
 Platform| Android
 Architecture| ARM64 ("arm64-v8a")
-Game Edition| Minecraft rust Edition
+Game Integration| JVM command construction only
 Native Technology| Rust
 Application Format| APK
 Project Type| Independent Open-Source Project
@@ -85,30 +113,48 @@ RustCraft-Launcher/
 └── LICENSE
 ```
 
-Note: This is a representative structure. Actual directories may differ depending on the implementation.
+## Build Requirements
 
-🦀 Technology & Engine
+The Android build was verified with JDK 17, Gradle 8.9, Android SDK Platform 34,
+Build Tools 34.0.0, NDK 26.1.10909125, Rust stable, and `cargo-ndk`. Java 25 is
+not compatible with this repository's Gradle/Groovy setup. Install the Android
+SDK components using Android Studio's SDK Manager or `sdkmanager`:
 
-RustCraft uses Rust-oriented native development technologies to support performance-critical components.
+```sh
+sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;26.1.10909125"
+rustup target add aarch64-linux-android armv7-linux-androideabi
+cargo install cargo-ndk --locked
+```
 
-Technology highlights:
+Set paths for the installed tools (adjust them for your machine), then run tests
+and builds:
 
-- Rust native development.
-- Android application integration.
-- ARM64 architecture support.
-- Native performance optimization.
-- Modular development approach.
+```sh
+export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+export ANDROID_HOME="$HOME/Android/Sdk"
+export ANDROID_SDK_ROOT="$ANDROID_HOME"
+export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/26.1.10909125"
+
+cargo test --manifest-path rust/Cargo.toml
+./gradlew :app:assembleDebug :app:assembleRelease
+```
+
+The release build currently produces an **unsigned** APK at
+`app/build/outputs/apk/release/app-release-unsigned.apk`. Configure a private
+release signing key before distributing an installable release; do not use a
+debug keystore for public releases.
 
 
-Special Thanks
+## Third-Party Attribution
 
-- ❤️ Horizon Android developers and contributors.
+- Horizon Android — original engine attribution: **[GoyDev](https://github.com/GoyDevv/Horizon-Android)**.
 - 🦀 Rust programming language community.
 - 📱 Android open-source developer community.
 - 🎮 Minecraft community.
 - 🌍 Everyone contributing to open-source development.
 
-All original developers retain credit and ownership of their respective contributions.
+All original developers retain credit and ownership of their respective
+contributions. Third-party components remain subject to their own licenses.
 
 ⚠️ Disclaimer
 
