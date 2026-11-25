@@ -63,9 +63,15 @@ Horizon Android — **[GoyDev](https://github.com/GoyDevv/Horizon-Android)**
 - Mod installation, import, and launching. Custom version profiles can remain
   stored for compatibility but the engine refuses to generate their launch commands.
 
+## v2.5 Release Downloads
+
+- Public v2.5 APK: [RustCraft-Launcher-v2.5.apk](https://github.com/Horizon423/RustCraft-Launcher/releases/download/v2.5/RustCraft-Launcher-v2.5.apk).
+- Previous working GUI reference: [RustCraft.Launcher-1.2.0-reference.apk](https://github.com/Horizon423/RustCraft-Launcher/releases/download/v2.5/RustCraft.Launcher-1.2.0-reference.apk).
+
+The previous 1.2.0 APK is provided only as an original-GUI reference. It is not a v2.5 implementation and has not been modified or rebuilt in this repository.
+
 ## v2.5 Release Notes
 
-- Public APK download: [RustCraft Launcher Edition v2.5](https://github.com/Horizon423/RustCraft-Launcher/releases/download/v2.5/RustCraft-Launcher-v2.5.apk).
 - Updated Android and native engine version metadata to 2.5.
 - Added a saved, validated offline username setting (3-16 ASCII letters, digits,
   or underscores) used by generated vanilla launch commands.
