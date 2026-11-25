@@ -35,9 +35,11 @@ Founder & Main Developer of RustCraft Launcher.
 
 Responsible for the project's overall development direction, customization, integration, branding, and launcher development.
 
-🤝 Original Engine Developers
+🤝 Upstream Project Attribution
 
-Horizon Android — **[GoyDev](https://github.com/GoyDevv/Horizon-Android)**
+The separate Horizon Android project is maintained by **[Ludovic Marie and the
+Horizon contributors](https://github.com/MocLG/horizon-android)**. The current
+RustCraft source tree does not include Horizon's game engine or client UI.
 
 
 ## Implemented
@@ -73,6 +75,7 @@ The previous 1.2.0 APK is provided only as an original-GUI reference. It is not 
 ## v2.5 Release Notes
 
 - Updated Android and native engine version metadata to 2.5.
+- Added verified open-source attribution and license notices.
 - Added a saved, validated offline username setting (3-16 ASCII letters, digits,
   or underscores) used by generated vanilla launch commands.
 - Restricted generated launch commands to vanilla releases and snapshots; custom
@@ -80,6 +83,8 @@ The previous 1.2.0 APK is provided only as an original-GUI reference. It is not 
 - No Mods menu or mod installation/import pipeline exists in this repository.
 - A Minecraft game client, in-game menu, authentication, and 3D skin preview are
   not included in the current architecture.
+- Because the Minecraft client and Options screen are not included, this build
+  does not alter or verify an in-game Horizon Credits entry.
 
 📱 Project Information
 
@@ -151,16 +156,32 @@ release signing key before distributing an installable release; do not use a
 debug keystore for public releases.
 
 
-## Third-Party Attribution
+## Credits & Open-Source Licenses
 
-- Horizon Android — original engine attribution: **[GoyDev](https://github.com/GoyDevv/Horizon-Android)**.
-- 🦀 Rust programming language community.
-- 📱 Android open-source developer community.
-- 🎮 Minecraft community.
-- 🌍 Everyone contributing to open-source development.
-
-All original developers retain credit and ownership of their respective
-contributions. Third-party components remain subject to their own licenses.
+- The repository-level license is Apache License 2.0. Its complete text is in
+  [LICENSE](./LICENSE).
+- [Horizon Android](https://github.com/MocLG/horizon-android) is an independent
+  upstream project. Its `LICENSE` credits “Ludovic Marie and the Horizon
+  contributors” and grants the MIT License; the complete notice and permission
+  text are preserved in [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
+  Horizon source and its game client are not included in this RustCraft source
+  tree.
+- The Rust JNI dependency `jni` 0.21.1 is dual-licensed MIT or Apache-2.0.
+  Its verified MIT notice is in [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md);
+  its Apache-2.0 terms are available in [LICENSE](./LICENSE). Other direct and
+  transitive Rust dependencies retain the licenses declared by their upstream
+  package manifests and recorded in [Cargo.lock](./rust/Cargo.lock).
+- `rust/Cargo.toml` declares the RustCraft crate as MIT, while the repository's
+  `LICENSE` is Apache-2.0. No separate RustCraft MIT license text or copyright
+  notice is present in this checkout, so that metadata conflict remains
+  unresolved; the `authors` field is not treated as a copyright notice.
+- No license called “LP2.0” is present in this repository or identified in
+  Horizon's upstream notices. Horizon's notices separately identify GPL-2.0
+  with the Classpath Exception for the OpenJDK 25 runtime distributed by
+  Horizon's Android build; that runtime is not part of this RustCraft source or
+  APK build.
+- Minecraft/Mojang/Microsoft trademarks and proprietary game materials are
+  separate from these open-source licenses and are not covered by them.
 
 ⚠️ Disclaimer
 
@@ -174,11 +195,9 @@ RustCraft Launcher is an independent and unofficial third-party project.
 
 📜 License
 
-This project is distributed under the *[Apache License 2.0](https://github.com/Horizon423/RustCraft-Launcher/blob/main/LICENSE)*
-
-See the "LICENSE" file for complete licensing information.
-
-Third-party components may have separate licensing requirements.
+See [LICENSE](./LICENSE) and
+[Credits & Open-Source Licenses](#credits--open-source-licenses) for the
+repository license and third-party licensing details.
 
 🤝 Contributions
 
